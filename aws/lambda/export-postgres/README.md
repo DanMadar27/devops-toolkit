@@ -1,4 +1,6 @@
-# Lambda
+# Export PostgreSQL Lambda
+
+This lambda function export PostgreSQL DB into S3 bucket.
 
 ## Environment Variables
 
