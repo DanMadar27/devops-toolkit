@@ -1,4 +1,8 @@
 # This workflow sends notifications to Slack for various PR events in a GitHub repository with detailed information.
+# 
+# Prerequisites:
+# - A Slack webhook URL must be stored in the repository secrets as SLACK_WEBHOOK_URL.
+# Check out this link for more information: https://api.slack.com/messaging/webhooks
 
 name: PR Status Notifications
 
