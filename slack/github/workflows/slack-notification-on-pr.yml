@@ -1,0 +1,153 @@
+# This workflow sends notifications to Slack for various PR events in a GitHub repository with detailed information.
+
+name: PR Status Notifications
+
+on:
+  pull_request:
+    types: [opened, reopened, closed, review_requested]
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  notify-slack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine notification type
+        id: notification
+        run: |
+          # Get repository name without org
+          REPO_NAME=$(echo "${{ github.repository }}" | cut -d '/' -f 2)
+          echo "repo_name=$REPO_NAME" >> $GITHUB_OUTPUT
+          
+          if [[ "${{ github.event_name }}" == "pull_request_review" ]]; then
+            if [[ "${{ github.event.review.state }}" == "approved" ]]; then
+              echo "title=PR Approved" >> $GITHUB_OUTPUT
+              echo "event_description=approved" >> $GITHUB_OUTPUT
+            elif [[ "${{ github.event.review.state }}" == "changes_requested" ]]; then
+              echo "title=PR Changes Requested" >> $GITHUB_OUTPUT
+              echo "event_description=changes requested" >> $GITHUB_OUTPUT
+            else
+              echo "title=PR Reviewed" >> $GITHUB_OUTPUT
+              echo "event_description=reviewed" >> $GITHUB_OUTPUT
+            fi
+          elif [[ "${{ github.event.action }}" == "opened" || "${{ github.event.action }}" == "reopened" ]]; then
+            echo "title=New PR Created" >> $GITHUB_OUTPUT
+            echo "event_description=created" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.action }}" == "closed" ]]; then
+            if [[ "${{ github.event.pull_request.merged }}" == "true" ]]; then
+              echo "title=PR Merged" >> $GITHUB_OUTPUT
+              echo "event_description=merged" >> $GITHUB_OUTPUT
+            else
+              echo "title=PR Closed" >> $GITHUB_OUTPUT
+              echo "event_description=closed without merging" >> $GITHUB_OUTPUT
+            fi
+          elif [[ "${{ github.event.action }}" == "review_requested" ]]; then
+            echo "title=PR Review Requested" >> $GITHUB_OUTPUT
+            echo "event_description=needs review" >> $GITHUB_OUTPUT
+          else
+            echo "title=PR Update" >> $GITHUB_OUTPUT
+            echo "event_description=updated" >> $GITHUB_OUTPUT
+          fi
+          
+          # Extract and sanitize PR body
+          if [[ "${{ github.event_name }}" == "pull_request_review" ]]; then
+            PR_BODY="${{ github.event.review.body }}"
+            if [[ -z "$PR_BODY" ]]; then
+              PR_BODY="${{ github.event.pull_request.body }}"
+            fi
+          else
+            PR_BODY="${{ github.event.pull_request.body }}"
+          fi
+          
+          if [[ -z "$PR_BODY" ]]; then
+            echo "pr_body=No description provided" >> $GITHUB_OUTPUT
+          else
+            # Use EOF delimiter for multiline outputs and escape problematic characters
+            echo "pr_body<<EOF" >> $GITHUB_OUTPUT
+            # Truncate body to avoid oversized payloads
+            echo "$PR_BODY" | head -c 500 >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Slack notification
+        run: |
+          # Set variables to avoid escaping issues
+          REPO="${{ github.repository }}"
+          REPO_NAME="${{ steps.notification.outputs.repo_name }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_NUMBER="${{ github.event.pull_request.number }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          PR_AUTHOR="${{ github.event.pull_request.user.login }}"
+          PR_STATE="${{ github.event.pull_request.state }}"
+          EVENT_TYPE="${{ steps.notification.outputs.event_description }}"
+          NOTIFICATION_TITLE="${{ steps.notification.outputs.title }}"
+          PR_BODY="${{ steps.notification.outputs.pr_body }}"
+          
+          # For review events, add reviewer information
+          if [[ "${{ github.event_name }}" == "pull_request_review" ]]; then
+            REVIEWER="${{ github.event.review.user.login }}"
+            REVIEW_COMMENT="${{ github.event.review.body }}"
+            if [[ ! -z "$REVIEW_COMMENT" ]]; then
+              REVIEW_INFO="by $REVIEWER: $REVIEW_COMMENT"
+            else
+              REVIEW_INFO="by $REVIEWER"
+            fi
+          else
+            REVIEW_INFO=""
+          fi
+          
+          # Create JSON payload file
+          cat > payload.json << EOF
+          {
+            "text": "[$REPO_NAME] $NOTIFICATION_TITLE - #$PR_NUMBER",
+            "blocks": [
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "*[$REPO_NAME] $NOTIFICATION_TITLE*"
+                }
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn", 
+                  "text": "*<$PR_URL|#$PR_NUMBER $PR_TITLE>*"
+                }
+              },
+              {
+                "type": "section",
+                "fields": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Author:*\n$PR_AUTHOR"
+                  },
+                  {
+                    "type": "mrkdwn",
+                    "text": "*Status:*\n$PR_STATE"
+                  }
+                ]
+              },
+              {
+                "type": "section",
+                "text": {
+                  "type": "mrkdwn",
+                  "text": "$PR_BODY"
+                }
+              },
+              {
+                "type": "context",
+                "elements": [
+                  {
+                    "type": "mrkdwn",
+                    "text": "PR was $EVENT_TYPE $REVIEW_INFO | $REPO"
+                  }
+                ]
+              }
+            ]
+          }
+          EOF
+          
+          # Send to Slack
+          curl -X POST -H 'Content-type: application/json' --data @payload.json '${{ secrets.SLACK_WEBHOOK_URL }}'
+
