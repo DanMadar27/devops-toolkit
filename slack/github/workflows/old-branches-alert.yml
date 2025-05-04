@@ -1,0 +1,71 @@
+name: Alert Old Git Branches to Slack
+
+on:
+  schedule:
+    - cron: "15 5 * * *" # Runs at 05:15 UTC every day
+  workflow_dispatch: # Allows manual runs too
+
+jobs:
+  check-old-branches:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Needed to fetch all history
+
+      - name: Set up Slack webhook secret
+        run: echo "SLACK_WEBHOOK=${{ secrets.SLACK_WEBHOOK_URL }}" >> $GITHUB_ENV
+
+      - name: Find old branches and alert Slack
+        run: |
+          #!/bin/bash
+          set -e # Exit immediately if a command exits with a non-zero status
+          
+          DAYS_OLD=60
+          NOW=$(date +%s)
+          OLD_BRANCHES=""
+
+          # Get repository name
+          REPO_NAME=$(basename -s .git $(git config --get remote.origin.url))
+          if [[ -z "$REPO_NAME" ]]; then
+            # Alternative method if the first one fails
+            REPO_NAME=$(git rev-parse --show-toplevel | xargs basename)
+          fi
+
+          # Ensure we're seeing what GitHub shows: update refs and remove stale ones
+          git fetch origin --prune
+
+          # Save the output to a temporary file instead of using a pipe
+          git for-each-ref --format="%(refname:short) %(committerdate:unix)" refs/remotes/origin/ > /tmp/branches_data.txt
+
+          # Now process the file - changes to OLD_BRANCHES will persist
+          while read -r BRANCH DATE; do
+            NAME=${BRANCH#origin/}
+            AGE=$(( (NOW - DATE) / 86400 ))
+
+            if [[ $AGE -gt $DAYS_OLD && "$NAME" != "main" && "$NAME" != "master" ]]; then
+              OLD_BRANCHES+="$NAME (last commit ${AGE} days ago)\n"
+            fi
+          done < /tmp/branches_data.txt
+
+          # Check if Slack webhook is configured
+          if [[ -z "$SLACK_WEBHOOK" ]]; then
+            echo "Error: SLACK_WEBHOOK environment variable not set"
+            exit 1
+          fi
+
+          # Send to Slack if any found
+          if [[ -n "$OLD_BRANCHES" ]]; then
+            # Echo the message with interpreted escape sequences
+            SLACK_MESSAGE=$(echo -e "⚠️ *Old Git Branches Detected in \`${REPO_NAME}\`:*\n$OLD_BRANCHES")
+            echo "$SLACK_MESSAGE"
+            
+            # Use printf to properly handle the newlines for JSON
+            PAYLOAD=$(printf '{"text": "%s"}' "$(echo "$SLACK_MESSAGE" | sed 's/"/\\"/g')")
+            
+            curl -X POST -H 'Content-type: application/json' --data "$PAYLOAD" "$SLACK_WEBHOOK"
+          else
+            echo "No old branches found in ${REPO_NAME}."
+          fi
