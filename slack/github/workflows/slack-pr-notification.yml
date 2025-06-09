@@ -74,6 +74,10 @@ jobs:
           fi
 
       - name: Send Slack notification
+        if: |
+          steps.notification.outputs.title == 'New PR Created' || 
+          steps.notification.outputs.title == 'PR Approved' || 
+          steps.notification.outputs.title == 'PR Merged'
         run: |
           # Set variables to avoid escaping issues
           REPO="${{ github.repository }}"
