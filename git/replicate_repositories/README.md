@@ -79,6 +79,7 @@ If you're on Windows without a Linux shell:
    ```bash
    git credential-cache exit
    ```
+   Or in Windows: search for "Credentials Manager" -> Windows Manager -> Delete desired credentials (git)
 
 ### Linux/macOS Environment
 
