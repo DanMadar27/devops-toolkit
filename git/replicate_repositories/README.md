@@ -4,7 +4,12 @@ This project provides automated scripts to replicate repositories from source to
 
 ## Overview
 
-The scripts use `git clone --bare` and `git push --mirror` to create complete repository replicas, including all branches, tags, and commit history.
+The scripts provide two approaches for repository replication:
+
+- **`clone_copy_repo` (Recommended)**: Clones both repositories normally, copies content (excluding .git), and pushes changes while preserving the original commit messages
+- **`mirror_repo` (Legacy)**: Uses `git clone --bare` and `git push --mirror` to create complete repository replicas, including all branches, tags, and commit history
+
+The `clone_copy_repo` approach is preferred as it provides better control over the replication process and preserves meaningful commit history.
 
 ## Prerequisites
 
@@ -27,10 +32,11 @@ DESTINATION_REPO="REPLACE_WITH_ACTUAL_REPO"          # Example: "https://github.
 ```
 
 **Files to update:**
-- `bash scripts/deploy_backend.sh`
-- `bat scripts/deploy_backend.bat`
-- `bat scripts/deploy_nextjs.bat` 
-- `bat scripts/deploy_react.bat`
+- `bash scripts/clone_copy_backend.sh`
+- `bat scripts/clone_copy_backend.bat`
+- Additional deployment scripts as needed
+
+Note: The legacy mirror scripts (`mirror_backend.sh`, `mirror_nextjs.bat`, `mirror_react.bat`) are still available but `clone_copy_repo` is now the recommended approach.
 
 ### 3. Authentication Setup
 
@@ -65,14 +71,20 @@ If you're on Windows without a Linux shell:
 2. **Navigate to the project directory**
 3. **Run the deployment script:**
    ```bash
-   # Deploy all repositories (backend, Next.js, and React)
+   # Recommended: Use clone_copy_repo approach
    cd "bat scripts"
+   ./clone_copy_backend.bat
+   
+   # Or use the generic script directly
+   ./clone_copy_repo.bat "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
+   
+   # Legacy: Deploy all repositories (backend, Next.js, and React) using mirror approach
    ./deploy_all.bat
    
-   # Or deploy individual components
-   ./deploy_backend.bat
-   ./deploy_nextjs.bat
-   ./deploy_react.bat
+   # Or deploy individual components (legacy mirror approach)
+   ./mirror_backend.bat
+   ./mirror_nextjs.bat
+   ./mirror_react.bat
    ```
 
 4. **Reset credentials if needed:**
@@ -92,11 +104,17 @@ For Unix-based systems:
 
 2. **Run deployment scripts:**
    ```bash
-   # Deploy individual component
+   # Recommended: Use clone_copy_repo approach
    cd "bash scripts"
-   ./deploy_backend.sh
+   ./clone_copy_backend.sh
    
-   # Or use the mirror script directly
+   # Or use the generic script directly
+   ./clone_copy_repo.sh "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
+   
+   # Legacy: Deploy individual component using mirror approach
+   ./mirror_backend.sh
+   
+   # Or use the mirror script directly (legacy)
    ./mirror_repo.sh "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
    ```
 
@@ -104,14 +122,27 @@ For Unix-based systems:
 
 ### Core Scripts
 
-- **`mirror_repo.sh`** / **`mirror_repo.bat`**: Core mirroring functionality that handles the git operations
-- **`deploy_backend.sh`** / **`deploy_backend.bat`**: Mirrors backend repository
-- **`deploy_nextjs.bat`**: Mirrors Next.js frontend repository  
-- **`deploy_react.bat`**: Mirrors React frontend repository
+**Recommended Approach:**
+- **`clone_copy_repo.sh`** / **`clone_copy_repo.bat`**: Core repository copying functionality that clones both repositories, copies content, and preserves commit messages
+- **`clone_copy_backend.sh`** / **`clone_copy_backend.bat`**: Copies backend repository using the clone_copy approach
+
+**Legacy Mirror Approach:**
+- **`mirror_repo.sh`** / **`mirror_repo.bat`**: Core mirroring functionality that handles the git operations using bare clone and mirror push
+- **`mirror_backend.sh`** / **`mirror_backend.bat`**: Mirrors backend repository
+- **`mirror_nextjs.bat`**: Mirrors Next.js frontend repository  
+- **`mirror_react.bat`**: Mirrors React frontend repository
 - **`deploy_all.bat`**: Runs all deployment scripts in sequence
 
 ### How It Works
 
+**Clone Copy Approach (Recommended):**
+1. **Clone**: Creates normal clones of both source and destination repositories
+2. **Copy**: Copies all content from source to destination (excluding .git directory)
+3. **Commit**: Commits changes using the original commit message from the source repository
+4. **Push**: Pushes changes to the destination repository
+5. **Cleanup**: Removes temporary directories
+
+**Mirror Approach (Legacy):**
 1. **Clone**: Creates a bare clone of the source repository
 2. **Configure**: Sets up the destination repository as the push remote
 3. **Mirror**: Pushes all branches, tags, and history to the destination
