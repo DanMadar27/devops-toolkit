@@ -1,0 +1,1 @@
+python3 ./clone_copy_repo.py <source_repo_url> <destination_repo_url>
