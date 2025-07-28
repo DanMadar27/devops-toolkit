@@ -34,6 +34,7 @@ DESTINATION_REPO="REPLACE_WITH_ACTUAL_REPO"          # Example: "https://github.
 **Files to update:**
 - `bash scripts/clone_copy_backend.sh`
 - `bat scripts/clone_copy_backend.bat`
+- `python_scripts/clone_copy_backend.bat` (Windows wrapper for Python script)
 - Additional deployment scripts as needed
 
 Note: The legacy mirror scripts (`mirror_backend.sh`, `mirror_nextjs.bat`, `mirror_react.bat`) are still available but `clone_copy_repo` is now the recommended approach.
@@ -63,6 +64,37 @@ Just run the scripts and wait for git to ask you for browser signing.
 
 ## Usage
 
+### Python Scripts (Cross-Platform)
+
+For environments with Python 3 installed, you can use the Python implementation which works across all platforms:
+
+1. **Ensure Python 3 is installed:**
+   ```bash
+   python3 --version
+   # or on Windows:
+   python --version
+   ```
+
+2. **Navigate to the python_scripts directory:**
+   ```bash
+   cd python_scripts
+   ```
+
+3. **Run the Python scripts directly:**
+   ```bash
+   # Use the core Python script directly
+   python3 clone_copy_repo.py "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
+   
+   # Or on Windows, use the batch wrapper
+   clone_copy_backend.bat
+   ```
+
+4. **Make Python script executable (Linux/macOS):**
+   ```bash
+   chmod +x clone_copy_repo.py
+   ./clone_copy_repo.py "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
+   ```
+
 ### Windows Environment
 
 If you're on Windows without a Linux shell:
@@ -75,7 +107,14 @@ If you're on Windows without a Linux shell:
    cd "bat scripts"
    ./clone_copy_backend.bat
    
-   # Or use the generic script directly
+   # Or use Python scripts (if Python is installed)
+   cd "python_scripts"
+   python clone_copy_repo.py "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
+   # Or use the Windows wrapper:
+   clone_copy_backend.bat
+   
+   # Or use the generic script directly (bash approach)
+   cd "bat scripts"
    ./clone_copy_repo.bat "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
    
    # Legacy: Deploy all repositories (backend, Next.js, and React) using mirror approach
@@ -108,7 +147,12 @@ For Unix-based systems:
    cd "bash scripts"
    ./clone_copy_backend.sh
    
-   # Or use the generic script directly
+   # Or use Python scripts (cross-platform)
+   cd "python_scripts"
+   python3 clone_copy_repo.py "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
+   
+   # Or use the generic bash script directly
+   cd "bash scripts"
    ./clone_copy_repo.sh "https://github.com/source-org/repo.git" "https://github.com/dest-org/repo.git"
    
    # Legacy: Deploy individual component using mirror approach
@@ -123,8 +167,8 @@ For Unix-based systems:
 ### Core Scripts
 
 **Recommended Approach:**
-- **`clone_copy_repo.sh`** / **`clone_copy_repo.bat`**: Core repository copying functionality that clones both repositories, copies content, and preserves commit messages
-- **`clone_copy_backend.sh`** / **`clone_copy_backend.bat`**: Copies backend repository using the clone_copy approach
+- **`clone_copy_repo.sh`** / **`clone_copy_repo.bat`** / **`clone_copy_repo.py`**: Core repository copying functionality that clones both repositories, copies content, and preserves commit messages
+- **`clone_copy_backend.sh`** / **`clone_copy_backend.bat`** / **`python_scripts/clone_copy_backend.bat`**: Copies backend repository using the clone_copy approach
 
 **Legacy Mirror Approach:**
 - **`mirror_repo.sh`** / **`mirror_repo.bat`**: Core mirroring functionality that handles the git operations using bare clone and mirror push
@@ -141,6 +185,11 @@ For Unix-based systems:
 3. **Commit**: Commits changes using the original commit message from the source repository
 4. **Push**: Pushes changes to the destination repository
 5. **Cleanup**: Removes temporary directories
+
+**Available implementations:**
+- **Bash script** (`bash scripts/clone_copy_repo.sh`): For Linux/macOS environments
+- **Batch script** (`bat scripts/clone_copy_repo.bat`): For Windows environments
+- **Python script** (`python_scripts/clone_copy_repo.py`): Cross-platform solution requiring Python 3
 
 **Mirror Approach (Legacy):**
 1. **Clone**: Creates a bare clone of the source repository
