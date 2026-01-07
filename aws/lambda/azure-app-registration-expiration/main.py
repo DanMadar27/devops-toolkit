@@ -1,9 +1,12 @@
 import os
+import json
+import boto3
 import requests
 from azure.identity import ClientSecretCredential # type: ignore
 from datetime import datetime, timezone
 
 DAYS_UNTIL_EXPIRY_WARNING = int(os.environ.get('DAYS_UNTIL_EXPIRY_WARNING', '30'))
+IGNORE_EXPIRED_SECRETS = os.environ.get('IGNORE_EXPIRED_SECRETS', 'false').lower() == 'true'
 
 def normalize_iso_datetime(iso_string):
     """
@@ -35,11 +38,27 @@ def send_slack_notification(message):
     except Exception as e:
         print(f"Failed to send Slack notification: {e}")
 
+def get_secret(secret_name):
+    """Retrieve secret from AWS Secrets Manager"""
+    session = boto3.session.Session()
+    client = session.client(service_name='secretsmanager')
+    
+    try:
+        get_secret_value_response = client.get_secret_value(SecretId=secret_name)
+        return get_secret_value_response['SecretString']
+    except Exception as e:
+        print(f"Error retrieving secret {secret_name}: {e}")
+        raise
+
 def lambda_handler(event, context):
-    # Azure App Credentials from environment variables
-    tenant_id = os.environ.get('AZURE_TENANT_ID')
-    client_id = os.environ.get('AZURE_CLIENT_ID')
-    client_secret = os.environ.get('AZURE_CLIENT_SECRET')
+    # Azure App Credentials from AWS Secrets Manager (plaintext secrets)
+    tenant_id_secret_name = os.environ.get('AZURE_TENANT_ID', 'azure-tenant-id')
+    client_id_secret_name = os.environ.get('AZURE_CLIENT_ID', 'azure-client-id')
+    client_secret_secret_name = os.environ.get('AZURE_CLIENT_SECRET', 'azure-client-secret')
+    
+    tenant_id = get_secret(tenant_id_secret_name)
+    client_id = get_secret(client_id_secret_name)
+    client_secret = get_secret(client_secret_secret_name)
 
     # 1. Get Access Token for MS Graph
     # Note: Use the app's own client_id and secret here
@@ -66,6 +85,11 @@ def lambda_handler(event, context):
         
         print(f"Secret Hint: {secret.get('hint')} expires on {expiry_str}")
         print(f"Days until expiry: {days_until_expiry}")
+        
+        # Skip already expired secrets if IGNORE_EXPIRED_SECRETS is enabled
+        if IGNORE_EXPIRED_SECRETS and days_until_expiry < 0:
+            print(f"Skipping expired secret (hint: {secret.get('hint')})")
+            continue
         
         # 4. Logic: Send Slack notification if expiration is close
         if days_until_expiry < DAYS_UNTIL_EXPIRY_WARNING:
