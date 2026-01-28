@@ -1,2 +1,2 @@
-# deployments
-Deployments instructions of various apps including Dockerfiles
+# DevOps Toolkit
+Collection of deployment configurations, Dockerfiles, and automation scripts for various applications.
