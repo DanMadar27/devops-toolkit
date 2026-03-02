@@ -1,5 +1,8 @@
 FROM node:20-alpine
 
+# Update and upgrade packages - Important for security and stability
+RUN apk update && apk upgrade --no-cache
+
 # Install curl for healthcheck
 RUN apk --no-cache add curl
 

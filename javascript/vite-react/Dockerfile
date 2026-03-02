@@ -3,6 +3,9 @@
 # Step 1: Build the application
 FROM public.ecr.aws/docker/library/node:20-alpine AS builder
 
+# Update and upgrade packages - Important for security and stability
+RUN apk update && apk upgrade --no-cache
+
 # Create a non-root user
 RUN addgroup --system --gid 1001 app && \
     adduser --system --uid 1001 app
@@ -22,6 +25,9 @@ RUN npm run build
 
 # Step 2: Set up the production environment
 FROM public.ecr.aws/nginx/nginx:stable-alpine
+
+# Update and upgrade packages - Important for security and stability
+RUN apk update && apk upgrade --no-cache
 
 # Create non-root user for nginx
 RUN addgroup --system --gid 1001 app && \
