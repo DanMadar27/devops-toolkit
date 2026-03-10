@@ -79,6 +79,12 @@ Review output values:
 terraform output
 ```
 
+Destroy workspace infrastructure:
+
+```bash
+terraform destroy
+```
+
 ## Infrastructure State
 
 By default, Terraform creates your state file locally. Storing your state remotely Using HCP Terraform will let you collaborate with your team more easily and keep your state file secure.
