@@ -91,7 +91,7 @@ By default, Terraform creates your state file locally. Storing your state remote
 
 ## Folder Structure
 
-- `providers.tf`: Define the providers we will use in our configuration.
+- `terraform.tf`: Define terraform configuration such as the cloud providers we will use.
 
 - `main.tf`: Main entry point for resources we create.
 
