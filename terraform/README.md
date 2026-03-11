@@ -44,6 +44,12 @@ terraform apply
 terraform apply -var instance_type=t2.large
 ```
 
+Alternatively, create a `terraform.tfvars` file (excluded from git) to avoid passing vars on every command:
+
+```hcl
+variable_name    = "variable value"
+```
+
 List resources and data sources:
 
 ```bash
