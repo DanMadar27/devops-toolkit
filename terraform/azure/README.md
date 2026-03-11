@@ -1,4 +1,4 @@
-# AWS Terraform
+# Azure Terraform
 
 Links:
 
