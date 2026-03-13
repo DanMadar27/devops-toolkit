@@ -128,7 +128,7 @@ terraform {
 
 - **Terraform Enterprise**: Self‑hosted version of Terraform Cloud for organizations that need to run Terraform in their own environment.
 - **Cloud storage backends** (remote state only, local execution):
-  - AWS S3 + DynamoDB locking
+  - AWS S3
   - GCS (Google Cloud Storage)
   - Azure Storage (Blob)
   - Consul
