@@ -1,7 +1,3 @@
-provider "aws" {
-  region = "eu-central-1"
-}
-
 module "test-vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "5.19.0"
