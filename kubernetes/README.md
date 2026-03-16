@@ -3,6 +3,8 @@
 Links:
 
 - [K8s Cluster Architecture](https://kubernetes.io/docs/concepts/architecture/)
+- [K8s Concepts](https://kubernetes.io/docs/concepts/)
+- [K8s Tutorials](https://kubernetes.io/docs/tutorials/)
 
 ## K8s Cluster Architecture
 
