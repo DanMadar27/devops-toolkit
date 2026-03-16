@@ -63,6 +63,3 @@ Addons use Kubernetes resources (DaemonSet,Deployment, etc) to implement cluster
 
 - **Network plugins:** responsible for allocating IP addresses to pods and enabling them to communicate with each other within the cluster.
 
-## Tools to Test in a Local Environment
-
-Minikube is a tool that lets you run Kubernetes locally. minikube runs an all-in-one or a multi-node local Kubernetes cluster on your personal computer (including Windows, macOS and Linux PCs) so that you can try out Kubernetes, or for daily development work.
