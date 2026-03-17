@@ -2,10 +2,13 @@
 
 Links:
 
-- [K8s Cluster Architecture](https://kubernetes.io/docs/concepts/architecture/)
-- [K8s Concepts](https://kubernetes.io/docs/concepts/)
 - [K8s Tutorials](https://kubernetes.io/docs/tutorials/)
+- [K8s Concepts](https://kubernetes.io/docs/concepts/)
+- [K8s Cluster Architecture](https://kubernetes.io/docs/concepts/architecture/)
 - [Workload Management](https://kubernetes.io/docs/concepts/workloads/controllers/)
+- [Services For Communication](https://kubernetes.io/docs/concepts/services-networking/)
+- [Storage](https://kubernetes.io/docs/concepts/storage/)
+- [Configuration](https://kubernetes.io/docs/concepts/configuration/)
 
 ## K8s Cluster Architecture
 
