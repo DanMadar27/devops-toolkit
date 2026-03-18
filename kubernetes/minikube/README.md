@@ -42,4 +42,7 @@ Expose service:
 
 ```bash
 minikube service <my-service>
+
+# Or with port-forwarding:
+kubectl port-forward svc/<my-service> <host-port>:<container-port>
 ```
