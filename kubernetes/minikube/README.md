@@ -37,3 +37,9 @@ Open dashboard:
 ```bash
 minikube dashboard
 ```
+
+Expose service:
+
+```bash
+minikube service <my-service>
+```
