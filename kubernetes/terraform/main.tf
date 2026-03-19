@@ -96,3 +96,25 @@ resource "helm_release" "prometheus" {
     { name = "server.resources.requests.memory", value = "256Mi" }
   ]
 }
+
+resource "helm_release" "grafana" {
+  depends_on = [helm_release.prometheus] # grafana needs prometheus up first
+
+  name             = "grafana"
+  repository       = "https://grafana.github.io/helm-charts"
+  chart            = "grafana"
+  namespace        = "monitoring"
+  create_namespace = true
+
+  set = [
+    { name = "service.type", value = "LoadBalancer" },
+    { name = "adminUser", value = var.grafana_admin_user }, # add this
+    { name = "adminPassword", value = var.grafana_admin_password },
+    # Auto-wire Prometheus as a datasource
+    { name = "datasources.datasources\\.yaml.apiVersion", value = "1" },
+    { name = "datasources.datasources\\.yaml.datasources[0].name", value = "Prometheus" },
+    { name = "datasources.datasources\\.yaml.datasources[0].type", value = "prometheus" },
+    { name = "datasources.datasources\\.yaml.datasources[0].url", value = "http://prometheus-server.monitoring.svc.cluster.local" },
+    { name = "datasources.datasources\\.yaml.datasources[0].isDefault", value = "true" }
+  ]
+}

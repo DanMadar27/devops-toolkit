@@ -45,3 +45,15 @@ variable "eks_node_desired_size" {
   type        = number
   default     = 2
 }
+
+variable "grafana_admin_user" {
+  description = "Grafana admin user"
+  type        = string
+  default     = "admin"
+}
+
+variable "grafana_admin_password" {
+  description = "Grafana admin password"
+  type        = string
+  sensitive   = true
+}
