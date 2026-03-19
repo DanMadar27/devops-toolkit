@@ -68,7 +68,7 @@ Review output values:
 terraform output
 ```
 
-Import resource to state (In case terraform had a timeout in a middle of apply operation)
+Import resource to state (Useful to sync resources to terraform)
 ```bash
 # Tell terraform "this release exists"
 terraform import helm_release.prometheus monitoring/prometheus
