@@ -1,3 +1,4 @@
+# https://registry.terraform.io/modules/terraform-aws-modules/eks/aws/latest
 module "eks" {
   source  = "terraform-aws-modules/eks/aws"
   version = "~> 21.0"
@@ -15,12 +16,12 @@ module "eks" {
   enable_cluster_creator_admin_permissions = true
 
   addons = {
-    coredns                = {}
+    coredns = {}
     eks-pod-identity-agent = {
       before_compute = true
     }
-    kube-proxy             = {}
-    vpc-cni                = {
+    kube-proxy = {}
+    vpc-cni = {
       before_compute = true
     }
   }
@@ -41,5 +42,35 @@ module "eks" {
     Environment = "test"
     Terraform   = "true"
   }
+
+}
+
+# Wait for EKS control plane to be fully ready
+resource "time_sleep" "wait_for_eks" {
+  depends_on      = [module.eks]
+  create_duration = "60s"
+}
+
+data "aws_eks_cluster_auth" "cluster" {
+  name       = module.eks.cluster_name
+  depends_on = [time_sleep.wait_for_eks]
+}
+
+resource "helm_release" "nginx" {
+  name       = "nginx"
+  repository = "https://helm.nginx.com/stable"
+  chart      = "nginx-ingress"
+  namespace  = "default"
+
+  set = [
+    {
+      name  = "controller.replicaCount"
+      value = "2"
+    },
+    {
+      name  = "controller.service.type"
+      value = "LoadBalancer"
+    }
+  ]
 
 }
