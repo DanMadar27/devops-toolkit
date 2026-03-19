@@ -74,6 +74,7 @@ resource "helm_release" "nginx" {
   ]
 }
 
+# Prometheus - For metrics collection
 resource "helm_release" "prometheus" {
   depends_on = [time_sleep.wait_for_eks]
 
@@ -97,6 +98,25 @@ resource "helm_release" "prometheus" {
   ]
 }
 
+# Loki - For logging collection
+resource "helm_release" "loki" {
+  depends_on = [time_sleep.wait_for_eks]
+
+  name             = "loki"
+  repository       = "https://grafana.github.io/helm-charts"
+  chart            = "loki-stack" # includes loki + promtail
+  namespace        = "monitoring"
+  create_namespace = true
+
+  set = [
+    { name = "promtail.enabled", value = "true" },          # collects logs from pods
+    { name = "loki.persistence.enabled", value = "false" }, # no EBS for demo
+    { name = "grafana.enabled", value = "false" },          # we already have grafana
+    { name = "prometheus.enabled", value = "false" }        # we already have prometheus
+  ]
+}
+
+# Grafana - For visualizing metrics and logs
 resource "helm_release" "grafana" {
   depends_on = [helm_release.prometheus] # grafana needs prometheus up first
 
@@ -110,11 +130,18 @@ resource "helm_release" "grafana" {
     { name = "service.type", value = "LoadBalancer" },
     { name = "adminUser", value = var.grafana_admin_user }, # add this
     { name = "adminPassword", value = var.grafana_admin_password },
-    # Auto-wire Prometheus as a datasource
+
+    # Prometheus datasource
     { name = "datasources.datasources\\.yaml.apiVersion", value = "1" },
     { name = "datasources.datasources\\.yaml.datasources[0].name", value = "Prometheus" },
     { name = "datasources.datasources\\.yaml.datasources[0].type", value = "prometheus" },
     { name = "datasources.datasources\\.yaml.datasources[0].url", value = "http://prometheus-server.monitoring.svc.cluster.local" },
-    { name = "datasources.datasources\\.yaml.datasources[0].isDefault", value = "true" }
+    { name = "datasources.datasources\\.yaml.datasources[0].isDefault", value = "true" },
+
+    # Loki datasource
+    { name = "datasources.datasources\\.yaml.datasources[1].name", value = "Loki" },
+    { name = "datasources.datasources\\.yaml.datasources[1].type", value = "loki" },
+    { name = "datasources.datasources\\.yaml.datasources[1].url", value = "http://loki.monitoring.svc.cluster.local:3100" },
+    { name = "datasources.datasources\\.yaml.datasources[1].isDefault", value = "false" }
   ]
 }
