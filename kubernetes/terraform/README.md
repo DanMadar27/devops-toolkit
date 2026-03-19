@@ -43,7 +43,7 @@ Access logs through Grafana Explore tab — no direct UI.
 
 ### Grafana
 
-Access via the LoadBalancer URL (see Terraform outputs). Login with credentials set in `terraform.tfvars`.
+Access via the LoadBalancer URL. Login with credentials set in `terraform.tfvars`.
 
 Import community dashboards from https://grafana.com/grafana/dashboards:
 - Node exporter (per node CPU/memory/disk)
