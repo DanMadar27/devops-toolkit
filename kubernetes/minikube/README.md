@@ -18,6 +18,9 @@ Check status of minikube cluster:
 
 ```bash
 minikube status
+
+# Or with custom memory and CPU configuration:
+minikube start --memory 5120 --cpus=4
 ```
 
 Stop minikube cluster:
