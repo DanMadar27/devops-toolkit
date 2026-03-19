@@ -68,6 +68,18 @@ Review output values:
 terraform output
 ```
 
+Import resource to state (In case terraform had a timeout in a middle of apply operation)
+```bash
+# Tell terraform "this release exists"
+terraform import helm_release.prometheus monitoring/prometheus
+
+# Optional - # Now terraform knows about it, so you can destroy it
+terraform destroy -target=helm_release.prometheus
+
+# Then re-apply with your terraform  fix
+terraform apply
+```
+
 Destroy workspace infrastructure:
 
 ```bash

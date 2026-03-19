@@ -72,5 +72,27 @@ resource "helm_release" "nginx" {
       value = "LoadBalancer"
     }
   ]
+}
 
+resource "helm_release" "prometheus" {
+  depends_on = [time_sleep.wait_for_eks]
+
+  name             = "prometheus"
+  repository       = "https://prometheus-community.github.io/helm-charts"
+  chart            = "prometheus"
+  namespace        = "monitoring"
+  create_namespace = true
+
+  timeout = 300 # increase from default 300 to 600
+  wait    = true
+
+  set = [
+    # Keep prometheus internal — no LoadBalancer needed
+    { name = "server.service.type", value = "ClusterIP" },
+    { name = "server.persistentVolume.enabled", value = "false" }, # no EBS needed (Demo)
+    { name = "alertmanager.enabled", value = "false" },            # skip alertmanager
+    { name = "prometheus-pushgateway.enabled", value = "false" },  # skip pushgateway
+    { name = "server.resources.requests.cpu", value = "100m" },
+    { name = "server.resources.requests.memory", value = "256Mi" }
+  ]
 }
