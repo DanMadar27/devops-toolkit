@@ -1,0 +1,22 @@
+---
+- name: Setup web server
+  hosts: webservers
+  become: true          # sudo
+
+  tasks:
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Start and enable Nginx
+      service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Deploy index page
+      copy:
+        content: "<h1>Hello from Ansible!</h1>"
+        dest: /var/www/html/index.html
