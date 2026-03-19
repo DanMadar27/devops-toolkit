@@ -46,6 +46,7 @@ variable "eks_node_desired_size" {
   default     = 2
 }
 
+# Grafana variables
 variable "grafana_admin_user" {
   description = "Grafana admin user"
   type        = string
