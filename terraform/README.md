@@ -203,5 +203,3 @@ Note: About viewing plan output:
 | **Visibility** | Team can see the plan in the PR. | Only the runner sees the plan. |
 | **Security** | Secrets stay in HCP Terraform. | Secrets must be on your local machine. |
 | **History** | Full audit log of who applied what. | Harder to track local history. |
-
-**Would you like me to show you how to set up "Variable Sets" so you can share your cloud credentials across multiple workspaces?**
