@@ -194,3 +194,20 @@ url-shortener/
 │       └── app-of-apps.yaml
 └── README.md
 ```
+
+## Known issues
+
+**ArgoCD Ingress health state stuck on "Progressing":** This is expected behavior in this setup.
+ArgoCD marks Ingress resources as `Progressing` until an external IP is assigned in the
+`ADDRESS` field. Since this project runs k3s on a single EC2 instance without a cloud load
+balancer or MetalLB, Traefik routes traffic directly via the node IP and no external IP is
+ever assigned. The services are fully functional — this is a cosmetic ArgoCD indicator only.
+The proper fix for a production on-premises setup would be to install MetalLB to manage IP
+address allocation and populate the Ingress address field.
+
+**ArgoCD Prometheus stack health state stuck on "Progressing":** kube-prometheus-stack installs
+numerous CRDs (ServiceMonitor, PrometheusRule, Alertmanager, etc.) that ArgoCD does not have
+built-in health checks for. ArgoCD cannot determine their health status and stays in
+`Progressing` indefinitely. The stack is fully functional — this can be resolved by adding
+custom health checks in `argocd-cm` for each CRD, or by setting
+`argocd.argoproj.io/ignore-healthcheck: "true"` on the affected resources.
