@@ -6,11 +6,25 @@
     mode: "0700"
   delegate_to: localhost
 
+- name: Copy kubeconfig to a readable temp location
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: /tmp/k3s.yaml
+    remote_src: true
+    mode: "0644"
+  become: true
+
 - name: Fetch kubeconfig from remote host
   fetch:
-    src: /etc/rancher/k3s/k3s.yaml
+    src: /tmp/k3s.yaml
     dest: "{{ lookup('env', 'HOME') }}/.kube/config"
     flat: true
+
+- name: Remove temp kubeconfig from remote host
+  file:
+    path: /tmp/k3s.yaml
+    state: absent
+  become: true
 
 - name: Replace server address with EC2 public IP
   replace:

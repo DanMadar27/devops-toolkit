@@ -28,7 +28,15 @@ A URL shortener with two Python microservices deployed on a self-managed k3s clu
 - Docker
 - kubectl
 
-## 1. Build and Push Images
+## 1. Provision Infrastructure
+
+```bash
+cd terraform/environments/dev
+terraform init
+terraform apply
+```
+
+## 2. Build and Push Images
 
 ```bash
 ECR_URL=<your-ecr-url>   # e.g. 123456789012.dkr.ecr.eu-central-1.amazonaws.com
@@ -43,20 +51,13 @@ docker build -t $ECR_URL/url-shortener/redirect:latest services/redirect/
 docker push $ECR_URL/url-shortener/redirect:latest
 ```
 
-## 2. Provision Infrastructure
-
-```bash
-cd terraform/environments/dev
-terraform init
-terraform apply -var="public_key=$(cat ~/.ssh/your-key.pub)"
-```
-
 ## 3. Run Ansible
 
 ```bash
-EC2_IP=$(terraform output -raw ec2_public_ip)
+cd terraform/environments/dev
+EC2_IP=$(terraform output -raw ec2_public_ip) # Then edit `ansible/inventory/hosts.yml`
 cd ../../../ansible
-ansible-playbook -i "${EC2_IP}," site.yml
+ansible-playbook -i inventory/hosts.yml site.yml
 ```
 
 ## 4. Update Kubeconfig After EC2 Restart
@@ -64,8 +65,8 @@ ansible-playbook -i "${EC2_IP}," site.yml
 If the EC2 instance is stopped and restarted (IP changes):
 
 ```bash
-EC2_IP=$(cd terraform/environments/dev && terraform output -raw ec2_public_ip)
-ansible-playbook -i "${EC2_IP}," site.yml --tags kubeconfig
+EC2_IP=$(cd terraform/environments/dev && terraform output -raw ec2_public_ip) # Then edit `ansible/inventory/hosts.yml`
+ansible-playbook -i inventory/hosts.yml site.yml --tags kubeconfig
 ```
 
 ## 5. Verify the Cluster
