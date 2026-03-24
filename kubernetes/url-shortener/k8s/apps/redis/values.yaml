@@ -5,7 +5,6 @@ redis:
   master:
     persistence:
       enabled: false
-
-image:
-  registry: public.ecr.aws
-  repository: bitnami/redis
+  image:
+    registry: public.ecr.aws
+    repository: bitnami/redis
