@@ -1,4 +1,8 @@
 kube-prometheus-stack:
+  prometheusOperator:
+    admissionWebhooks:
+      enabled: false
+
   grafana:
     enabled: true
     adminPassword: admin
