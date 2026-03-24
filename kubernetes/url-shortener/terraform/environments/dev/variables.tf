@@ -16,7 +16,17 @@ variable "instance_type" {
   default     = "t3.medium"
 }
 
-variable "public_key" {
-  description = "SSH public key content for EC2 access"
+variable "key_name" {
+  description = "Name of an existing AWS key pair to use for SSH access"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "ID of an existing VPC"
+  type        = string
+}
+
+variable "subnet_id" {
+  description = "ID of an existing public subnet"
   type        = string
 }

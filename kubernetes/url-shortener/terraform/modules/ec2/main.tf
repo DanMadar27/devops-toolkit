@@ -72,22 +72,12 @@ resource "aws_security_group" "main" {
   }
 }
 
-resource "aws_key_pair" "main" {
-  key_name   = "url-shortener-key"
-  public_key = var.public_key
-
-  tags = {
-    Project     = "url-shortener"
-    Environment = var.environment
-  }
-}
-
 resource "aws_instance" "main" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.main.id]
-  key_name               = aws_key_pair.main.key_name
+  key_name               = var.key_name
 
   user_data = <<-EOF
     #!/bin/bash

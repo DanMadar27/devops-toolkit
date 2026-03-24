@@ -1,14 +1,7 @@
 variables {
-  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC0 test-key"
-}
-
-run "vpc_cidr_is_correct" {
-  command = plan
-
-  assert {
-    condition     = module.vpc.vpc_id != ""
-    error_message = "VPC was not created"
-  }
+  key_name  = "test-key"
+  vpc_id    = "vpc-00000000000000000"
+  subnet_id = "subnet-00000000000000000"
 }
 
 run "ec2_instance_type_is_t3_medium" {
