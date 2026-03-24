@@ -28,12 +28,12 @@ spec:
             - name: REDIS_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: redis-config
+                  name: shorten-redis-config
                   key: REDIS_HOST
             - name: REDIS_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: redis-config
+                  name: shorten-redis-config
                   key: REDIS_PORT
           livenessProbe:
             httpGet:
@@ -58,7 +58,7 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: redis-config
+  name: shorten-redis-config
 data:
   REDIS_HOST: {{ .Values.redis.host | quote }}
   REDIS_PORT: {{ .Values.redis.port | quote }}
