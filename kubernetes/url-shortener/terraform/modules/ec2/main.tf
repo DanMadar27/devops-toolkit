@@ -72,12 +72,17 @@ resource "aws_security_group" "main" {
   }
 }
 
+data "aws_iam_instance_profile" "ecr_read" {
+  name = var.iam_instance_profile
+}
+
 resource "aws_instance" "main" {
   ami                    = data.aws_ami.ubuntu.id
   instance_type          = var.instance_type
   subnet_id              = var.subnet_id
   vpc_security_group_ids = [aws_security_group.main.id]
   key_name               = var.key_name
+  iam_instance_profile   = data.aws_iam_instance_profile.ecr_read.name
 
   user_data = <<-EOF
     #!/bin/bash

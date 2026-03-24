@@ -19,6 +19,12 @@ variable "key_name" {
   type        = string
 }
 
+variable "iam_instance_profile" {
+  description = "Name of an existing IAM instance profile to attach to the EC2 instance"
+  type        = string
+  default     = "ReadECR"
+}
+
 variable "environment" {
   description = "Deployment environment"
   type        = string
