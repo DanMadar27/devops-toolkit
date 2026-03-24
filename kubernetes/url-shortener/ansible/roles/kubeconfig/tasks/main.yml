@@ -1,0 +1,26 @@
+---
+- name: Ensure local .kube directory exists
+  file:
+    path: "{{ lookup('env', 'HOME') }}/.kube"
+    state: directory
+    mode: "0700"
+  delegate_to: localhost
+
+- name: Fetch kubeconfig from remote host
+  fetch:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: "{{ lookup('env', 'HOME') }}/.kube/config"
+    flat: true
+
+- name: Replace server address with EC2 public IP
+  replace:
+    path: "{{ lookup('env', 'HOME') }}/.kube/config"
+    regexp: 'server: https://127\.0\.0\.1:6443'
+    replace: "server: https://{{ ansible_host }}:6443"
+  delegate_to: localhost
+
+- name: Set kubeconfig file permissions
+  file:
+    path: "{{ lookup('env', 'HOME') }}/.kube/config"
+    mode: "0600"
+  delegate_to: localhost

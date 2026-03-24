@@ -1,0 +1,10 @@
+apiVersion: v2
+name: redis
+description: Redis dependency chart for URL Shortener
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: redis
+    version: "19.x.x"
+    repository: "https://charts.bitnami.com/bitnami"

@@ -1,0 +1,12 @@
+---
+- hosts: all
+  become: true
+  roles:
+    - k3s
+
+- hosts: all
+  become: false
+  roles:
+    - role: kubeconfig
+      tags: kubeconfig
+    - argocd

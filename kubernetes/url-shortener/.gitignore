@@ -1,0 +1,22 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+.terraform.lock.hcl
+*.tfvars
+
+# Ansible
+ansible/inventory/ec2_ip.txt
+
+# Python
+**/__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Environment files
+.env
+
+# OS
+.DS_Store

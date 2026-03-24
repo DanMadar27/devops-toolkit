@@ -1,0 +1,122 @@
+grafana:
+  enabled: true
+  adminPassword: admin
+  service:
+    type: NodePort
+    nodePort: 32000
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+  additionalDataSources:
+    - name: Loki
+      type: loki
+      url: http://loki:3100
+      access: proxy
+
+prometheus:
+  prometheusSpec:
+    serviceMonitorSelectorNilUsesHelmValues: false
+
+# Grafana dashboard ConfigMap
+grafana.ini:
+  dashboards:
+    default_home_dashboard_path: /tmp/dashboards/url-shortener.json
+
+# Dashboard via ConfigMap (label grafana_dashboard=1)
+extraObjects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: url-shortener-dashboard
+      labels:
+        grafana_dashboard: "1"
+    data:
+      url-shortener.json: |
+        {
+          "title": "URL Shortener",
+          "panels": [
+            {
+              "title": "HTTP Request Rate - Shorten",
+              "type": "graph",
+              "targets": [
+                {
+                  "expr": "rate(http_requests_total{job=\"shorten\"}[1m])",
+                  "legendFormat": "{{ method }} {{ status }}"
+                }
+              ]
+            },
+            {
+              "title": "HTTP Request Rate - Redirect",
+              "type": "graph",
+              "targets": [
+                {
+                  "expr": "rate(http_requests_total{job=\"redirect\"}[1m])",
+                  "legendFormat": "{{ method }} {{ status }}"
+                }
+              ]
+            },
+            {
+              "title": "p99 Latency - Shorten",
+              "type": "graph",
+              "targets": [
+                {
+                  "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"shorten\"}[5m]))",
+                  "legendFormat": "p99"
+                }
+              ]
+            },
+            {
+              "title": "p99 Latency - Redirect",
+              "type": "graph",
+              "targets": [
+                {
+                  "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job=\"redirect\"}[5m]))",
+                  "legendFormat": "p99"
+                }
+              ]
+            },
+            {
+              "title": "Redis Connected Clients",
+              "type": "graph",
+              "targets": [
+                {
+                  "expr": "redis_connected_clients",
+                  "legendFormat": "clients"
+                }
+              ]
+            },
+            {
+              "title": "Pod Restarts",
+              "type": "graph",
+              "targets": [
+                {
+                  "expr": "increase(kube_pod_container_status_restarts_total{namespace=\"default\"}[1h])",
+                  "legendFormat": "{{ pod }}"
+                }
+              ]
+            },
+            {
+              "title": "Shorten Service Logs",
+              "type": "logs",
+              "targets": [
+                {
+                  "expr": "{app=\"shorten\"}",
+                  "datasource": "Loki"
+                }
+              ]
+            },
+            {
+              "title": "Redirect Service Logs",
+              "type": "logs",
+              "targets": [
+                {
+                  "expr": "{app=\"redirect\"}",
+                  "datasource": "Loki"
+                }
+              ]
+            }
+          ],
+          "schemaVersion": 27,
+          "version": 1
+        }
