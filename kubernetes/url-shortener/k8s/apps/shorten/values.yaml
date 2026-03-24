@@ -1,7 +1,7 @@
 image:
   repository: <your-aws-account-id>.dkr.ecr.eu-central-1.amazonaws.com/url-shortener/shorten
-  tag: latest
-  pullPolicy: Always
+  tag: v1.0.0
+  pullPolicy: IfNotPresent
 
 replicaCount: 2
 
