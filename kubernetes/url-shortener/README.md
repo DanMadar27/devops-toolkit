@@ -135,18 +135,25 @@ open http://$(cd terraform/environments/dev && terraform output -raw ec2_public_
 
 ## 9. Test the Services
 
+First, port-forward both services in separate terminals:
+
+```bash
+kubectl port-forward svc/shorten 8081:80 -n default
+kubectl port-forward svc/redirect 8082:80 -n default
+```
+
+Then test:
+
 ```bash
 # Shorten a URL
-curl -X POST http://shorten.local/shorten \
+curl -X POST http://localhost:8081/shorten \
   -H "Content-Type: application/json" \
   -d '{"url": "https://example.com"}'
 # {"short_code": "abc123"}
 
-# Redirect
-curl -L http://redirect.local/abc123
+# Redirect (replace abc123 with the short_code returned above)
+curl -L http://localhost:8082/abc123
 ```
-
-> Add `shorten.local` and `redirect.local` to `/etc/hosts` pointing at the EC2 public IP.
 
 ## 10. Teardown
 
