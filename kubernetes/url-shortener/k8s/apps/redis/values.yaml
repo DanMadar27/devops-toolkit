@@ -1,0 +1,10 @@
+redis:
+  architecture: standalone
+  auth:
+    enabled: false
+  master:
+    persistence:
+      enabled: false
+  image:
+    registry: public.ecr.aws
+    repository: bitnami/redis

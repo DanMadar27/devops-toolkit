@@ -1,0 +1,31 @@
+image:
+  repository: <your-aws-account-id>.dkr.ecr.eu-central-1.amazonaws.com/url-shortener/shorten
+  tag: v1.0.0
+  pullPolicy: IfNotPresent
+
+replicaCount: 2
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+
+ingress:
+  host: shorten.local
+
+redis:
+  host: redis-master
+  port: 6379
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 3
+  cpuUtilization: 70

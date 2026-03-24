@@ -69,3 +69,82 @@ Addons use Kubernetes resources (DaemonSet,Deployment, etc) to implement cluster
 
 - **Network plugins:** responsible for allocating IP addresses to pods and enabling them to communicate with each other within the cluster.
 
+## kubectl Commands Reference
+
+### Pod Management
+```bash
+kubectl get pods                    # List pods in current namespace
+kubectl get pods -A                 # List pods in ALL namespaces. -A can be used in more commands.
+kubectl get pods -o wide            # List pods with extra info (node, IP)
+kubectl describe pod <pod-name>     # Detailed info about a pod
+kubectl logs <pod-name>             # View pod logs
+kubectl logs -f <pod-name>          # Stream pod logs
+kubectl exec -it <pod-name> -- sh   # Shell into a pod
+kubectl delete pod <pod-name>       # Delete a pod
+```
+
+### Deployments
+```bash
+kubectl get deployments
+kubectl create deployment <name> --image=<image>
+kubectl scale deployment <name> --replicas=3
+kubectl rollout status deployment/<name>
+kubectl rollout status deployment/<name> -n <namespace>
+kubectl rollout undo deployment/<name>
+kubectl set image deployment/<name> <container>=<new-image>
+```
+
+### Services & Networking
+```bash
+kubectl get svc                          # List services
+kubectl expose deployment <name> --port=80
+kubectl port-forward <pod-name> 8080:80  # Forward local port to pod
+kubectl get ingress
+```
+
+### Namespaces
+```bash
+kubectl get namespaces
+kubectl create namespace <name>
+kubectl config set-context --current --namespace=<name>  # Switch namespace
+```
+
+### Config & Context
+```bash
+kubectl config get-contexts      # List all contexts
+kubectl config use-context <ctx> # Switch context
+kubectl config current-context   # Show current context
+kubectl config view --minify | grep server # Check which server the kubeconfig is pointing to
+kubectl cluster-info # Get info about current cluster
+
+# Create new config by copy config directly to your laptop
+scp user@master-node:/etc/kubernetes/admin.conf ~/.kube/config
+```
+
+### Nodes
+```bash
+kubectl get nodes
+kubectl describe node <node-name>
+kubectl cordon <node-name>    # Mark node unschedulable
+kubectl drain <node-name>     # Evict pods from node
+kubectl uncordon <node-name>  # Mark node schedulable again
+```
+
+### Apply / Manage Resources
+```bash
+kubectl apply -f <file.yaml>        # Apply a manifest
+kubectl delete -f <file.yaml>       # Delete resources from manifest
+kubectl get all                     # List all resources in namespace
+kubectl get all -A                  # List all resources across namespaces
+kubectl edit <resource> <name>      # Edit resource in-place
+kubectl patch <resource> <name> ... # Patch a resource
+```
+
+### Debugging & Utilities
+```bash
+kubectl top pods                 # CPU/memory usage for pods
+kubectl top nodes                # CPU/memory usage for nodes
+kubectl get events               # Show cluster events
+kubectl explain <resource>       # Docs for a resource type
+kubectl api-resources            # List all available resource types
+```

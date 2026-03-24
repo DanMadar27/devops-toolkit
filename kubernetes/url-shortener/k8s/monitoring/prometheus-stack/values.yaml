@@ -1,0 +1,24 @@
+kube-prometheus-stack:
+  prometheusOperator:
+    admissionWebhooks:
+      enabled: false
+
+  grafana:
+    enabled: true
+    adminPassword: admin
+    service:
+      type: NodePort
+      nodePort: 32000
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+    additionalDataSources:
+      - name: Loki
+        type: loki
+        url: http://loki.monitoring:3100
+        access: proxy
+
+  prometheus:
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false

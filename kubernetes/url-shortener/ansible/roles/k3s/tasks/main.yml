@@ -1,0 +1,60 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install dependencies
+  apt:
+    name:
+      - curl
+      - git
+      - open-iscsi
+    state: present
+
+- name: Ensure k3s config directory exists
+  file:
+    path: /etc/rancher/k3s
+    state: directory
+    mode: "0755"
+
+- name: Write k3s config with tls-san
+  copy:
+    dest: /etc/rancher/k3s/config.yaml
+    mode: "0644"
+    content: |
+      disable:
+        - traefik
+      tls-san:
+        - "{{ ansible_host }}"
+  register: k3s_config
+
+- name: Install k3s
+  shell: |
+    curl -sfL https://get.k3s.io | sh -
+  args:
+    creates: /usr/local/bin/k3s
+
+- name: Delete dynamic cert so k3s regenerates it with new SANs
+  file:
+    path: /var/lib/rancher/k3s/server/tls/dynamic-cert.json
+    state: absent
+  when: k3s_config.changed
+  notify: restart k3s
+
+- name: Enable and start k3s service
+  systemd:
+    name: k3s
+    enabled: true
+    state: started
+
+- name: Flush handlers to apply restart if needed
+  meta: flush_handlers
+
+- name: Wait for k3s node to be ready
+  command: kubectl get nodes
+  register: nodes_output
+  retries: 20
+  delay: 10
+  until: "'Ready' in nodes_output.stdout"
+  changed_when: false
