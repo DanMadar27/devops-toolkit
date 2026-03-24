@@ -8,7 +8,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/DanMadar27/devops-toolkit.git
-    targetRevision: HEAD
+    targetRevision: url-shortener-project
     path: kubernetes/url-shortener/k8s/apps
   destination:
     server: https://kubernetes.default.svc
@@ -27,7 +27,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/DanMadar27/devops-toolkit.git
-    targetRevision: HEAD
+    targetRevision: url-shortener-project
     path: kubernetes/url-shortener/k8s/apps/redis
   destination:
     server: https://kubernetes.default.svc
@@ -46,7 +46,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/DanMadar27/devops-toolkit.git
-    targetRevision: HEAD
+    targetRevision: url-shortener-project
     path: kubernetes/url-shortener/k8s/apps/shorten
   destination:
     server: https://kubernetes.default.svc
@@ -65,7 +65,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/DanMadar27/devops-toolkit.git
-    targetRevision: HEAD
+    targetRevision: url-shortener-project
     path: kubernetes/url-shortener/k8s/apps/redirect
   destination:
     server: https://kubernetes.default.svc
@@ -84,7 +84,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/DanMadar27/devops-toolkit.git
-    targetRevision: HEAD
+    targetRevision: url-shortener-project
     path: kubernetes/url-shortener/k8s/monitoring/prometheus-stack
   destination:
     server: https://kubernetes.default.svc
@@ -103,7 +103,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/DanMadar27/devops-toolkit.git
-    targetRevision: HEAD
+    targetRevision: url-shortener-project
     path: kubernetes/url-shortener/k8s/monitoring/loki-stack
   destination:
     server: https://kubernetes.default.svc
