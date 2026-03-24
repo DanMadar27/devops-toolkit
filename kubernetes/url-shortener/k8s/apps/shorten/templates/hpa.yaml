@@ -2,6 +2,8 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: shorten
+  annotations:
+    argocd.argoproj.io/ignore-healthcheck: "true"
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
