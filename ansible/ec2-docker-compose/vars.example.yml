@@ -1,0 +1,14 @@
+# Copy to vars.yml and fill in values before running the playbook.
+# vars.yml is gitignored — never commit it.
+
+# Path to the SSH private key for the EC2 instance
+# Generate with: terraform -chdir=../terraform output -raw private_key_pem > albarius-login-key.pem
+ssh_key_file: "albarius-login-key.pem"
+
+# Git repository URL with a GitHub access token embedded.
+# Create a token at: GitHub → Settings → Developer settings → Personal access tokens
+# Required permission: Contents (read-only)
+repo_url: "https://x-access-token:<token>@github.com/your-org/albarius-login.git"
+
+# Local path to your .env file (uploaded to the EC2)
+env_file: "../../.env"

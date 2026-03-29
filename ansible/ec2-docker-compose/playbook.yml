@@ -1,0 +1,124 @@
+---
+# Usage:
+#   ansible-playbook -i inventory.ini playbook.yml -e @vars.yml
+#
+# First run: fresh install (Docker + clone + start)
+# Subsequent runs: idempotent (git pull + restart only if changed)
+
+- name: Configure EC2 and deploy albarius-login
+  hosts: ec2
+  become: true
+  vars:
+    app_user: ubuntu
+    repo_dir: /home/ubuntu/albarius-login
+
+  tasks:
+    # ── Docker ────────────────────────────────────────────────────────────────
+
+    - name: Install apt prerequisites for Docker repo
+      ansible.builtin.apt:
+        name:
+          - ca-certificates
+          - curl
+          - gnupg
+        state: present
+        update_cache: true
+
+    - name: Create /etc/apt/keyrings directory
+      ansible.builtin.file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Add Docker GPG key
+      ansible.builtin.get_url:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        dest: /etc/apt/keyrings/docker.asc
+        mode: "0644"
+        force: false
+
+    - name: Add Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: >-
+          deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc]
+          https://download.docker.com/linux/ubuntu
+          {{ ansible_distribution_release }} stable
+        filename: docker
+        state: present
+
+    - name: Install Docker Engine and Compose plugin
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+        state: present
+        update_cache: true
+
+    - name: Enable and start Docker
+      ansible.builtin.systemd:
+        name: docker
+        enabled: true
+        state: started
+
+    - name: Add ubuntu user to docker group
+      ansible.builtin.user:
+        name: "{{ app_user }}"
+        groups: docker
+        append: true
+
+    # ── Repository ────────────────────────────────────────────────────────────
+    # Ansible handles git clone/pull here
+
+    - name: Install git
+      ansible.builtin.apt:
+        name: git
+        state: present
+
+    - name: Clone repository (first run)
+      ansible.builtin.git:
+        # repo_url must include the token: https://x-access-token:<token>@github.com/...
+        # Set it in vars.yml (gitignored)
+        repo: "{{ repo_url }}"
+        dest: "{{ repo_dir }}"
+        version: main
+        update: true
+      become_user: "{{ app_user }}"
+      register: git_result
+
+    # ── Environment ───────────────────────────────────────────────────────────
+
+    - name: Upload .env file
+      ansible.builtin.copy:
+        src: "{{ env_file }}"
+        dest: "{{ repo_dir }}/.env"
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0600"
+      register: env_result
+
+    # ── Scripts ───────────────────────────────────────────────────────────────
+
+    - name: Create deploy.sh shortcut in home directory
+      ansible.builtin.copy:
+        dest: /home/{{ app_user }}/deploy.sh
+        owner: "{{ app_user }}"
+        group: "{{ app_user }}"
+        mode: "0755"
+        content: |
+          #!/bin/bash
+          set -e
+          cd {{ repo_dir }}
+          git pull
+          cd infrastructure/linux-instance-config
+          ./start.sh
+
+    # ── Deploy ────────────────────────────────────────────────────────────────
+
+    - name: Run start.sh (build image and start container)
+      ansible.builtin.shell:
+        cmd: bash start.sh
+        chdir: "{{ repo_dir }}/infrastructure/linux-instance-config"
+      when: git_result.changed or env_result.changed
