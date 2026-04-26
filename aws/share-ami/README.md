@@ -10,7 +10,7 @@ Because the snapshots are encrypted with a CMK you control, sharing is safe: you
 
 | File | Purpose |
 |---|---|
-| `create_ami_encrypted.py` | Creates the KMS key, AMI, and shares both with a target account |
+| `share_ami_encrypted.py` | Creates the KMS key, AMI, copies it (re-encrypting under the CMK), and shares both with a target account |
 | `prepare_instance.sh` | Runs **on the instance** to scrub secrets before snapshotting |
 
 ---
@@ -76,19 +76,15 @@ aws ec2 stop-instances --instance-ids i-0abc123def456789
 aws ec2 wait instance-stopped --instance-ids i-0abc123def456789
 ```
 
-### Step 3 — Create the encrypted AMI
+### Step 3 — Create and share the encrypted AMI
 
 ```bash
-python create_ami_encrypted.py -i <instance-id>
-```
-
-Share with another account at the same time:
-
-```bash
-python create_ami_encrypted.py \
+python share_ami_encrypted.py \
   -i i-0abc123def456789 \
   -a 123456789012 \
-  -r us-east-1
+  -r us-east-1 \
+  -n my-encrypted-ami \
+  -t alias/ami-sharing-key
 ```
 
 ---
@@ -96,59 +92,73 @@ python create_ami_encrypted.py \
 ## Usage reference
 
 ```
-python create_ami_encrypted.py -i <instance-id> [OPTIONS]
+python share_ami_encrypted.py -i <instance-id> -a <target-account-id> -r <region> [OPTIONS]
 
 Required:
   -i, --instance-id       Source EC2 instance ID
+  -a, --target-account-id Target AWS account ID to share the AMI and KMS key with
+  -r, --region            AWS region (e.g. us-east-1)
 
 Optional:
   -n, --ami-name          AMI name (default: encrypted-ami-<id>-<timestamp>)
-  -r, --region            AWS region (default: from env / AWS config)
-  -a, --share-account-id  Target AWS account ID to share AMI + KMS key with
-  -t, --kms-key-alias     KMS alias (default: alias/ami-share-<instance-id>)
-  -d, --description       AMI description
-  -w, --wait-timeout      Max seconds to wait for AMI (default: 3600)
+  -t, --kms-alias         KMS key alias (default: alias/ami-sharing-key)
 ```
 
 ---
 
 ## What the Python script does
 
-1. Validates credentials and resolves the current account/region via STS.
-2. Checks the instance state — warns if running (no-reboot snapshot).
-3. Creates a CMK with a key policy that allows EC2/EBS to use it for encryption.
-4. If `--share-account-id` is given, extends the key policy to grant the target account the minimum permissions needed to re-encrypt or launch from the snapshot.
-5. Creates the AMI with all EBS volumes forced to encrypted using the CMK.
-6. Waits for the AMI to reach `available` state.
-7. Shares the AMI and its underlying snapshots with the target account.
-8. Writes results to `ami_creation_results_<timestamp>.env` for scripting.
+1. Resolves the caller account ID via STS.
+2. Creates a CMK (`alias/ami-sharing-key`) with a key policy that allows EC2/EBS to use it for encryption.
+3. Extends the key policy to grant the target account `kms:DescribeKey`, `kms:ReEncrypt*`, `kms:CreateGrant`, and `kms:Decrypt`.
+4. Creates an AMI from the source instance and waits for it to reach `available`.
+5. Copies the AMI in the same region, re-encrypting all snapshots under the CMK, and waits for `available`.
+6. Shares the copied AMI and its underlying snapshots with the target account via `ModifyImageAttribute` / `ModifySnapshotAttribute`.
+7. Prints a summary of all relevant IDs.
 
-If the script fails after creating the KMS key, an `atexit` handler schedules the orphaned key for deletion (7-day pending window) to avoid unnecessary costs.
+---
+
+## Why Two Steps? (create-image + copy-image)
+
+`create-image` snapshots the instance volumes as-is. AWS locks each snapshot to whatever KMS key the source volume already uses — typically the default AWS-managed key (`aws/ebs`) — and there is no API parameter to override this during image creation.
+
+`copy-image` is the only AWS API that allows re-encryption: it decrypts each snapshot and re-encrypts it under a key you specify (`--kms-key-id`). This is how you move the snapshots onto a CMK you control, which is required for cross-account sharing (the default AWS-managed key cannot be shared with another account).
+
+**Exception — skip `copy-image` if your volumes already use your CMK.** If the source instance's EBS volumes were created with your CMK, `create-image` produces snapshots already encrypted under it. In that case you can share the original AMI and its snapshots directly and skip the copy step entirely.
 
 ---
 
 ## Outputs
 
-Results are written to `ami_creation_results_<timestamp>.env`:
+A summary is printed on completion:
 
-```bash
-KMS_KEY_ID=...
-KMS_KEY_ARN=...
-KMS_ALIAS=...
-AMI_ID=...
-AMI_NAME=...
-REGION=...
-SOURCE_INSTANCE=...
-SHARED_WITH=...    # only present when --share-account-id was used
 ```
-
-Source it in shell scripts: `source ami_creation_results_<timestamp>.env`
+KMS Key ID       : ...
+KMS Key ARN      : ...
+KMS Alias        : alias/ami-sharing-key
+Source AMI ID    : ami-... (original, not shared)
+Copied AMI ID    : ami-... (re-encrypted copy, shared with target)
+Region           : ...
+Shared with      : <target-account-id>
+```
 
 ---
 
 ## Next steps for the target account
 
-Copying the AMI is always recommended. When copying, the target account **must specify their own KMS key** (`--kms-key-id`). This re-encrypts the snapshots under a key they own and control — after the copy completes they have zero dependency on the source account's KMS key, and the source account can delete the CMK at any time without affecting them.
+Copying the AMI into the target account is always recommended. The copy re-encrypts all snapshots under a key the target account owns — after that they have zero dependency on the source account's CMK, and the source account can delete it at any time without affecting them.
+
+### What to share with the target account
+
+The AMI ID alone is not enough. Share all three:
+
+| What | Where to find it |
+|---|---|
+| AMI ID | printed in the summary at the end of the script |
+| Source region | the region you ran the script in |
+| Source CMK ARN | printed in the summary (`KMS Key ARN`) |
+
+The target account does not pass the source CMK ARN in the copy command, but they need it to confirm they have the correct KMS permissions before running the copy — and to diagnose any `KMS access denied` errors.
 
 ### Same-region copy
 
@@ -161,26 +171,29 @@ aws ec2 copy-image \
   --source-image-id <ami-id> \
   --name "copied-<ami-name>" \
   --encrypted \
-  --kms-key-id <target-account-kms-key-arn>   # key in eu-central-1
+  --kms-key-id <target-account-kms-key-arn>   # their own key in eu-central-1
 ```
 
 ### Cross-region copy
 
 Use this when the target account wants the AMI in a different region (e.g. source is `eu-central-1`, target wants `us-east-1`).
 
-**Important:** KMS keys are regional. The CMK created by `create_ami_encrypted.py` only exists in the source region and cannot encrypt volumes in another region. The target account must supply their own KMS key in the destination region.
+**Important:** KMS keys are regional. The source CMK only exists in the source region. The target account must supply their own KMS key in the destination region.
 
 ```bash
+# --source-region: where the shared AMI lives
+# --region:        where the target account wants it
+# --kms-key-id:    their own key in the destination region
 aws ec2 copy-image \
-  --source-region eu-central-1 \              # where the shared AMI lives
-  --region us-east-1 \                        # where the target account wants it
+  --source-region eu-central-1 \
+  --region us-east-1 \
   --source-image-id <ami-id> \
   --name "copied-<ami-name>" \
   --encrypted \
-  --kms-key-id <target-account-kms-key-arn>   # key in us-east-1 (target region)
+  --kms-key-id <target-account-kms-key-arn>
 ```
 
-After the copy completes, the target account's AMI in `us-east-1` is encrypted with their own key and is fully independent of the source account.
+After the copy completes, the target account's AMI is encrypted with their own key and is fully independent of the source account.
 
 ### Launch directly (without copying)
 
