@@ -1,7 +1,6 @@
 variable "domain_name" {
   description = "Domain name for the SSL certificate and HTTPS listener"
   type        = string
-  default     = "example.com"
 }
 
 variable "created_by" {

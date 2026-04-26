@@ -1,5 +1,5 @@
 variable "domain_name" {
-  description = "Domain name for the SSL certificate (e.g. login.support.albarius.io)"
+  description = "Domain name for the SSL certificate (e.g. project.com)"
   type        = string
 }
 

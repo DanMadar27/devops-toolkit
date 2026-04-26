@@ -58,6 +58,36 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+# Optional: add listener for grafana. Use GRAFANA_ROOT_URL env variable for the Grafana container.
+# resource "aws_lb_target_group" "grafana" {
+#   name     = "${var.app_name}-grafana-tg"
+#   port     = 3020
+#   protocol = "HTTP"
+#   vpc_id   = var.vpc_id
+
+#   health_check {
+#     path                = "/api/health"
+#     protocol            = "HTTP"
+#     matcher             = "200"
+#     interval            = 30
+#     timeout             = 10
+#     healthy_threshold   = 2
+#     unhealthy_threshold = 3
+#   }
+
+#   tags = {
+#     Name      = "${var.app_name}-grafana-tg"
+#     App       = var.app_name
+#     CreatedBy = var.created_by
+#   }
+# }
+
+# resource "aws_lb_target_group_attachment" "grafana" {
+#   target_group_arn = aws_lb_target_group.grafana.arn
+#   target_id        = var.ec2_instance_id
+#   port             = 3020
+# }
+
 # HTTPS listener — forwards traffic to the app on port 3000
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.this.arn

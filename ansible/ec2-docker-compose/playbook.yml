@@ -5,12 +5,12 @@
 # First run: fresh install (Docker + clone + start)
 # Subsequent runs: idempotent (git pull + restart only if changed)
 
-- name: Configure EC2 and deploy albarius-login
+- name: Configure EC2 and deploy project
   hosts: ec2
   become: true
   vars:
     app_user: ubuntu
-    repo_dir: /home/ubuntu/albarius-login
+    repo_dir: /home/ubuntu/project
 
   tasks:
     # ── Docker ────────────────────────────────────────────────────────────────
@@ -83,7 +83,7 @@
         # Set it in vars.yml (gitignored)
         repo: "{{ repo_url }}"
         dest: "{{ repo_dir }}"
-        version: main
+        version: master
         update: true
       become_user: "{{ app_user }}"
       register: git_result

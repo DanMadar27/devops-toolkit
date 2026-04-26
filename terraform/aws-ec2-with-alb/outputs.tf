@@ -1,7 +1,7 @@
 # Run `terraform output acm_validation_records` to get the CNAME records
-# that the albarius.io DNS owner must add before the certificate will be issued.
+# that the project.com DNS owner must add before the certificate will be issued.
 output "acm_validation_records" {
-  description = "CNAME records to give the albarius.io DNS owner for SSL certificate validation"
+  description = "CNAME records to give the project.com DNS owner for SSL certificate validation"
   value       = module.acm.validation_records
 }
 
