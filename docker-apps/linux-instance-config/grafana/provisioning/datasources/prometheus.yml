@@ -1,0 +1,11 @@
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy        # Grafana backend queries Prometheus, not the browser
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false      # prevents accidental edits via the UI
+    jsonData:
+      timeInterval: "15s"  # match prometheus scrape_interval
