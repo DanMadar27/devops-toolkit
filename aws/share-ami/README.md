@@ -67,6 +67,8 @@ What the script removes:
 
 After the script completes, exit the SSH session.
 
+Note: You can also remove source code if you like. See more info in [Sharing Without Source Code](#sharing-without-source-code).
+
 ### Step 2 — Stop the instance (recommended)
 
 A stopped instance produces a fully consistent snapshot. A running instance works but may have in-flight I/O.
@@ -209,3 +211,59 @@ The target account can launch instances from the shared AMI without copying, but
 - The CMK is created with a key policy that grants only the minimum permissions required. The target account cannot administer the key.
 - SSH host keys are removed by `prepare_instance.sh` and will be freshly generated when the AMI is launched in the target account — preventing host-spoofing.
 - Revoking cross-account access is as simple as removing the target account from the KMS key policy (or deleting the key).
+
+## Sharing Without Source Code
+
+You can avoid sharing your source code if you like. The following example assumes you use docker-compose for your application setup.
+
+### 1. Build Images Locally
+
+```bash
+docker compose build
+docker images  # verify images exist
+```
+
+### 2. Update `docker-compose.yml`
+
+Replace `build:` with `image:` for every service:
+
+```yaml
+# Before
+services:
+  api:
+    build: ./api
+
+# After
+services:
+  api:
+    image: myapp-api:latest
+    env_file: .env
+```
+
+### 3. Remove Source Code
+
+```bash
+rm -rf .git ./api ./worker ./frontend   # your source dirs
+rm -f Dockerfile */Dockerfile
+docker builder prune -af           # clear build cache
+docker compose down -v             # stop containers & remove volumes
+```
+
+### 4. Configure `.env`
+
+Leave placeholder values for the customer:
+
+```env
+DB_PASSWORD=change_me
+API_KEY=change_me
+APP_PORT=8080
+```
+
+### 5. Customer Startup
+
+After sharing AMI, customer needs to edit environment variables and start the services:
+
+```bash
+nano .env
+docker compose up -d
+```
