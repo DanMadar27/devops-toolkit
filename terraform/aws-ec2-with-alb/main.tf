@@ -42,6 +42,12 @@ module "compute" {
   key_name           = module.key_pair.key_name
   security_group_ids = [module.security_groups.ec2_security_group_id]
   created_by         = var.created_by
+
+  # Uncomment to enable EC2 start/stop scheduling (also uncomment in modules/compute/variables.tf and modules/compute/main.tf)
+  # start_ec2_schedule_name       = var.start_ec2_schedule_name
+  # stop_ec2_schedule_name        = var.stop_ec2_schedule_name
+  # start_ec2_schedule_expression = var.start_ec2_schedule_expression
+  # stop_ec2_schedule_expression  = var.stop_ec2_schedule_expression
 }
 
 module "load_balancer" {
