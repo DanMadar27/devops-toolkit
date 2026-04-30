@@ -33,3 +33,35 @@ variable "created_by" {
   type        = string
   default     = "Terraform"
 }
+
+/*
+# Scheduler variables (optional)
+variable "start_ec2_schedule_name" {
+  description = "The name of the start EC2 schedule."
+  type        = string
+}
+
+variable "stop_ec2_schedule_name" {
+  description = "The name of the stop EC2 schedule."
+  type        = string
+  default     = "apartments-stop-ec2-daily-sun-fri"
+}
+
+variable "group_name" {
+  description = "The name of the group name."
+  type        = string
+  default     = "default"
+}
+
+variable "start_ec2_schedule_expression" {
+  description = "The schedule expression."
+  type        = string
+  # default     = "cron(0 8 ? * SUN-FRI *)" # 08:00 AM, Sunday to Friday
+}
+
+variable "stop_ec2_schedule_expression" {
+  description = "The schedule expression."
+  type        = string
+  # default     = "cron(0 20 ? * SUN-FRI *)" # 08:00 PM, Sunday to Friday
+}
+*/
