@@ -88,6 +88,22 @@ resource "aws_lb_listener" "http" {
 #   port             = 3020
 # }
 
+# resource "aws_lb_listener_rule" "grafana" {
+#   listener_arn = aws_lb_listener.https.arn
+#   priority     = 10
+
+#   condition {
+#     path_pattern {
+#       values = ["/grafana", "/grafana/*"]
+#     }
+#   }
+
+#   action {
+#     type             = "forward"
+#     target_group_arn = aws_lb_target_group.grafana.arn
+#   }
+# }
+
 # HTTPS listener — forwards traffic to the app on port 3000
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.this.arn
