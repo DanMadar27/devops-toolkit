@@ -47,6 +47,15 @@ resource "aws_security_group" "ec2" {
     security_groups = [aws_security_group.alb.id]
   }
 
+  # For ports like grafana
+  # ingress {
+  #   description     = "App traffic from ALB"
+  #   from_port       = 3020
+  #   to_port         = 3020
+  #   protocol        = "tcp"
+  #   security_groups = [aws_security_group.alb.id]
+  # }
+
   ingress {
     description = "SSH from public"
     from_port   = 22
