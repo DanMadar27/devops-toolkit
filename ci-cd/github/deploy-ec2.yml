@@ -3,6 +3,22 @@ name: Deploy to EC2
 # Trigger: push to master or manually
 # Actions: Run deploy.sh script in EC2. If fails sends a Slack notification.
 
+# Prerequisite: IAM user with a policy to update security group rules:
+# {
+# 	"Version": "2012-10-17",
+# 	"Statement": [
+# 		{
+# 			"Sid": "VisualEditor0",
+# 			"Effect": "Allow",
+# 			"Action": [
+# 				"ec2:RevokeSecurityGroupIngress",
+# 				"ec2:AuthorizeSecurityGroupIngress"
+# 			],
+# 			"Resource": "arn:aws:ec2:<aws-region>:<aws-account-id>:security-group/<security-group-id>"
+# 		}
+# 	]
+# }
+
 on:
   push:
     branches:
