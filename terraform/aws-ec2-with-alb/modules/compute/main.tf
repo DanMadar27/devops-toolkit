@@ -18,6 +18,11 @@ resource "aws_instance" "this" {
     App       = var.app_name
     CreatedBy = var.created_by
   }
+
+  # Optional: Ignore AMI changes (to avoid an EC2 replacement when there is a newer version of Ubuntu)
+  # lifecycle {
+  #   ignore_changes = [ami]
+  # }
 }
 
 /* # Optional scheduling for EC2
