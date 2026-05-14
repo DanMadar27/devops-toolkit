@@ -86,6 +86,12 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - promtail_positions:/var/promtail
     command: -config.file=/etc/promtail/config.yml
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -f promtail || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
     depends_on:
       loki:
         condition: service_healthy
