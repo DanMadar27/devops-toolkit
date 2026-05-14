@@ -12,3 +12,7 @@ repo_url: "https://x-access-token:<token>@github.com/your-org/project.git"
 
 # Local path to your .env file (uploaded to the EC2)
 env_file: "../../.env"
+
+# Set to true on GPU instances (e.g. g4dn.xlarge) to install nvidia-container-toolkit
+# and configure Docker to use the NVIDIA runtime (required for Ollama GPU acceleration)
+install_nvidia: false

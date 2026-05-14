@@ -1,0 +1,44 @@
+---
+- name: Install ubuntu-drivers-common
+  ansible.builtin.apt:
+    name: ubuntu-drivers-common
+    state: present
+    update_cache: true
+
+- name: Install recommended NVIDIA drivers
+  ansible.builtin.shell:
+    cmd: |
+      driver=$(ubuntu-drivers devices | awk '/recommended/ {print $3}')
+      apt-get install -y "$driver"
+    creates: /proc/driver/nvidia/version
+  register: nvidia_driver_install
+
+- name: Reboot to load NVIDIA drivers
+  ansible.builtin.reboot:
+    reboot_timeout: 300
+  when: nvidia_driver_install.changed
+
+- name: Add NVIDIA Container Toolkit GPG key and repository
+  ansible.builtin.shell:
+    cmd: >
+      curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey |
+      gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg &&
+      curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list |
+      sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' |
+      tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+    creates: /etc/apt/sources.list.d/nvidia-container-toolkit.list
+
+- name: Install nvidia-container-toolkit
+  ansible.builtin.apt:
+    name: nvidia-container-toolkit
+    state: present
+    update_cache: true
+
+- name: Configure Docker to use NVIDIA runtime
+  ansible.builtin.command: nvidia-ctk runtime configure --runtime=docker
+
+- name: Restart Docker to apply NVIDIA runtime
+  ansible.builtin.systemd:
+    name: docker
+    state: restarted
+

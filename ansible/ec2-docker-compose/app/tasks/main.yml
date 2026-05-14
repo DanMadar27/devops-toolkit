@@ -1,0 +1,69 @@
+---
+- name: Install git
+  ansible.builtin.apt:
+    name: git
+    state: present
+
+- name: Clone repository (first run)
+  ansible.builtin.git:
+    # repo_url must include the token: https://x-access-token:<token>@github.com/...
+    # Set it in vars.yml (gitignored)
+    repo: "{{ repo_url }}"
+    dest: "{{ repo_dir }}"
+    version: master
+    update: true
+  become_user: "{{ app_user }}"
+  register: git_result
+
+- name: Upload .env file
+  ansible.builtin.copy:
+    src: "{{ env_file }}"
+    dest: "{{ repo_dir }}/infrastructure/linux-instance-config/.env"
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0600"
+  register: env_result
+
+- name: Create deploy.sh shortcut in home directory
+  ansible.builtin.copy:
+    dest: /home/{{ app_user }}/deploy.sh
+    owner: "{{ app_user }}"
+    group: "{{ app_user }}"
+    mode: "0755"
+    content: |
+      #!/bin/bash
+      set -e
+      cd {{ repo_dir }}
+      git pull
+      cd infrastructure/linux-instance-config
+      ./start.sh
+
+# Optional: NVIDIA GPU for ollama:
+# - name: Create docker-compose.override.yml with NVIDIA GPU config
+#   ansible.builtin.copy:
+#     dest: "{{ repo_dir }}/infrastructure/linux-instance-config/docker-compose.override.yml"
+#     owner: "{{ app_user }}"
+#     group: "{{ app_user }}"
+#     mode: "0644"
+#     content: |
+#       services:
+#         ollama:
+#           deploy:
+#             resources:
+#               reservations:
+#                 devices:
+#                   - driver: nvidia
+#                     count: all
+#                     capabilities: [gpu]
+#   when: install_nvidia | default(false)
+
+- name: Run start.sh (build image and start container)
+  ansible.builtin.shell:
+    cmd: bash start.sh
+    chdir: "{{ repo_dir }}/infrastructure/linux-instance-config"
+  when: git_result.changed or env_result.changed
+
+# Optional: AI setup reminder
+# - name: Print AI setup reminder
+#   ansible.builtin.debug:
+#     msg: "Setup ollama on first deployment: sudo docker exec ollama ollama pull mistral"
