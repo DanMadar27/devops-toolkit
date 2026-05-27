@@ -88,3 +88,8 @@ services:
     ports:
       - "3010:3010"
 ```
+
+## Viewing logs in Grafana
+
+Use Loki dashboard to view logs of all containers.
+You can also view logs in the "Explore" tab. Use the `container_name` label.
