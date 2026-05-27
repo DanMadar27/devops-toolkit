@@ -1,10 +1,18 @@
 name: linux-instance-template
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    tag: "{{.Name}}"
+    max-size: "10m"
+    max-file: "3"
+
 services:
   rabbitmq:
     image: rabbitmq:3.13-management
     container_name: rabbitmq
     restart: no
+    logging: *default-logging
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS}
@@ -24,6 +32,7 @@ services:
     image: prom/prometheus:latest
     container_name: prometheus
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - prometheus_data:/prometheus
@@ -40,6 +49,7 @@ services:
     image: grafana/grafana:latest
     container_name: grafana
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "3020:3000"
     environment:
@@ -66,6 +76,7 @@ services:
     image: grafana/loki:3.4.2
     container_name: loki
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       - ./loki-config.yml:/etc/loki/config.yaml:ro
       - loki_data:/loki
@@ -81,9 +92,10 @@ services:
     image: grafana/promtail:latest
     container_name: promtail
     restart: unless-stopped
+    logging: *default-logging
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - promtail_positions:/var/promtail
     command: -config.file=/etc/promtail/config.yml
     healthcheck:
@@ -100,6 +112,7 @@ services:
     image: postgres:16
     container_name: db
     restart: always
+    logging: *default-logging
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -117,6 +130,7 @@ services:
     build: ../../web-server
     container_name: web-server
     restart: always
+    logging: *default-logging
     ports:
       - "3000:3000"
     environment:
@@ -142,6 +156,7 @@ services:
     build: ../../orchestrator
     container_name: orchestrator
     restart: always
+    logging: *default-logging
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASS}@rabbitmq
@@ -162,6 +177,7 @@ services:
   consumer:
     build: ../../consumer
     restart: always
+    logging: *default-logging
     deploy:
       replicas: 2
     environment:
@@ -183,6 +199,7 @@ services:
   migrator:
     image: flyway/flyway
     container_name: migrator
+    logging: *default-logging
     command:
       - -url=jdbc:postgresql://db:5432/${POSTGRES_DB}
       - -user=${POSTGRES_USER}
