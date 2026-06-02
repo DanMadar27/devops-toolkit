@@ -1,7 +1,7 @@
 {
-  "title": "Logs via Loki",
-  "uid": "loki",
-  "tags": ["logs"],
+  "title": "ERROR Logs",
+  "uid": "errors-simple",
+  "tags": ["errors", "logs"],
   "schemaVersion": 39,
   "version": 1,
   "editable": true,
@@ -35,15 +35,6 @@
         "sort": 1,
         "hide": 0,
         "skipUrlSync": false
-      },
-      {
-        "name": "search",
-        "label": "Search",
-        "type": "textbox",
-        "current": { "selected": false, "text": "", "value": "" },
-        "query": "",
-        "hide": 0,
-        "skipUrlSync": false
       }
     ]
   },
@@ -54,7 +45,7 @@
     {
       "id": 1,
       "type": "logs",
-      "title": "Logs",
+      "title": "ERROR Logs",
       "datasource": {
         "type": "loki",
         "uid": "loki"
@@ -67,7 +58,7 @@
       },
       "options": {
         "showTime": true,
-        "showLabels": true,
+        "showLabels": false,
         "showCommonLabels": false,
         "wrapLogMessage": true,
         "prettifyLogMessage": false,
@@ -82,7 +73,7 @@
             "type": "loki",
             "uid": "loki"
           },
-          "expr": "{container_name=~\"${container:raw}\"} |~ \"(?i)${search:raw}\"",
+          "expr": "{container_name=~\"${container:raw}\"} |~ \" ERROR \"",
           "queryType": "range"
         }
       ]
