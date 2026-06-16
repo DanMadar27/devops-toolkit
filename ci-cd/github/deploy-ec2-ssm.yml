@@ -3,7 +3,7 @@ name: Deploy to EC2
 # Trigger: push to master or manually
 # Actions: Run deploy.sh script in EC2. If fails sends a Slack notification.
 
-# Prerequisite: IAM user with a policy to update security group rules:
+# Prerequisite: IAM user with a policy to send ssm command:
 # {
 #   "Version": "2012-10-17",
 #   "Statement": [
@@ -28,6 +28,42 @@ name: Deploy to EC2
 #       "Resource": "*"
 #     }
 #   ]
+# }
+# Or more tightened:
+# {
+# 	"Version": "2012-10-17",
+# 	"Statement": [
+# 		{
+# 			"Sid": "SSMGetCommand",
+# 			"Effect": "Allow",
+# 			"Action": [
+# 				"ssm:GetCommandInvocation",
+# 				"ssm:ListCommandInvocations",
+# 				"ssm:DescribeInstanceInformation"
+# 			],
+# 			"Resource": "*"
+# 		},
+# 		{
+# 			"Sid": "EC2DescribeForSSM",
+# 			"Effect": "Allow",
+# 			"Action": [
+# 				"ec2:DescribeInstances",
+# 				"ec2:DescribeInstanceStatus"
+# 			],
+# 			"Resource": "*"
+# 		},
+# 		{
+# 			"Sid": "SSMSendCommand",
+# 			"Effect": "Allow",
+# 			"Action": [
+# 				"ssm:SendCommand"
+# 			],
+# 			"Resource": [
+# 				"arn:aws:ec2:<region>:<account-id>:instance/<instance-id>",
+# 				"arn:aws:ssm:<region>::document/AWS-RunShellScript"
+# 			]
+# 		}
+# 	]
 # }
 
 on:

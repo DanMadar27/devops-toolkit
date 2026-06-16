@@ -194,3 +194,43 @@ For deploying versions via sending ssm commands:
   ]
 }
 ```
+
+Or more tightened:
+
+```json
+{
+	"Version": "2012-10-17",
+	"Statement": [
+		{
+			"Sid": "SSMGetCommand",
+			"Effect": "Allow",
+			"Action": [
+				"ssm:GetCommandInvocation",
+				"ssm:ListCommandInvocations",
+				"ssm:DescribeInstanceInformation"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "EC2DescribeForSSM",
+			"Effect": "Allow",
+			"Action": [
+				"ec2:DescribeInstances",
+				"ec2:DescribeInstanceStatus"
+			],
+			"Resource": "*"
+		},
+		{
+			"Sid": "SSMSendCommand",
+			"Effect": "Allow",
+			"Action": [
+				"ssm:SendCommand"
+			],
+			"Resource": [
+				"arn:aws:ec2:<region>:<account-id>:instance/<instance-id>",
+				"arn:aws:ssm:<region>::document/AWS-RunShellScript"
+			]
+		}
+	]
+}
+```
