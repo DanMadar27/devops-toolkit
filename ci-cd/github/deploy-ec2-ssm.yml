@@ -95,16 +95,27 @@ jobs:
             --query "Command.CommandId" \
             --output text)
 
-          aws ssm wait command-executed \
-            --command-id "$COMMAND_ID" \
-            --instance-id "${{ secrets.EC2_INSTANCE_ID }}" || true
+          MAX_ATTEMPTS=40
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+              --query Status --output text)
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep 15
+          done
+
 
           aws ssm get-command-invocation \
             --command-id "$COMMAND_ID" \
             --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
             --query "{status:Status, stdout:StandardOutputContent, stderr:StandardErrorContent}"
 
-          [ "$(aws ssm get-command-invocation --command-id "$COMMAND_ID" --instance-id "${{ secrets.EC2_INSTANCE_ID }}" --query Status --output text)" = "Success" ]
+          [ "$STATUS" = "Success" ]
      
       - name: Notify Slack on failure
         if: failure()
