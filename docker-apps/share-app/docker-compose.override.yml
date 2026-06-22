@@ -1,0 +1,8 @@
+services:
+  web-server:
+    image: project-name-web-server:latest
+    build: !reset null # removes the build key entirely.
+
+  consumer:
+    image: project-name-consumer:latest
+    build: !reset null # removes the build key entirely.
