@@ -1,0 +1,104 @@
+# Share app to S3
+
+name: Share App
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to export (e.g. v1.2.3)'
+        required: true
+        type: string
+      presign:
+        description: 'Generate a presigned URL (7 days)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  export:
+    name: Export to S3
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Export via SSM
+        env:
+          VERSION: ${{ inputs.version }}
+          S3_BUCKET: ${{ secrets.SHARE_S3_BUCKET }}
+          S3_PATH: ${{ secrets.SHARE_S3_PATH }}
+          EC2_REPO_PATH: ${{ secrets.EC2_REPO_PATH }}
+        run: |
+          if [ -z "$S3_BUCKET" ]; then echo "::error::SHARE_S3_BUCKET is empty"; exit 1; fi
+          if [ -z "$S3_PATH" ]; then echo "::error::SHARE_S3_PATH is empty"; exit 1; fi
+          case "$S3_PATH" in --*) echo "::error::SHARE_S3_PATH starts with '--' (got: $S3_PATH)"; exit 1 ;; esac
+
+          PRESIGN_ARG=""
+          if [[ "${{ inputs.presign }}" == "true" ]]; then
+            PRESIGN_ARG=" --presign"
+          fi
+
+          CMD="mkdir -p ~/share-app && cd ~/share-app && bash $EC2_REPO_PATH/infrastructure/share-app/export.sh $VERSION $S3_BUCKET $S3_PATH${PRESIGN_ARG}"
+
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Project export share-app ${{ inputs.version }}" \
+            --parameters "commands=[\"sudo su - ubuntu -c '${CMD}'\"]" \
+            --query "Command.CommandId" \
+            --output text)
+
+          # 60 attempts × 30 seconds = 30 minutes
+          MAX_ATTEMPTS=60
+          ATTEMPT=0
+          while [ $ATTEMPT -lt $MAX_ATTEMPTS ]; do
+            STATUS=$(aws ssm get-command-invocation \
+              --command-id "$COMMAND_ID" \
+              --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+              --query Status --output text)
+            case "$STATUS" in
+              Success|Failed|Cancelled|TimedOut) break ;;
+            esac
+            ATTEMPT=$((ATTEMPT + 1))
+            sleep 30
+          done
+
+          INVOCATION=$(aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "${{ secrets.EC2_INSTANCE_ID }}" \
+            --query "{status:Status, stdout:StandardOutputContent, stderr:StandardErrorContent}" \
+            --output json)
+          echo "$INVOCATION"
+
+          if [ "$STATUS" = "Success" ]; then
+            URL=$(echo "$INVOCATION" | jq -r '.stdout' | sed -n 's/^PRESIGNED_URL=//p' | head -n1)
+            if [ -n "$URL" ]; then
+              {
+                echo "### Project Share App — ${{ inputs.version }}"
+                echo ""
+                echo "Presigned URL (valid 7 days):"
+                echo ""
+                echo "$URL"
+              } >> "$GITHUB_STEP_SUMMARY"
+
+              curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+                -H "Content-Type: application/json" \
+                -d "$(jq -n --arg v "${{ inputs.version }}" --arg u "$URL" \
+                  '{text: (":package: Project Share App " + $v + " ready\n" + $u)}')"
+            fi
+          fi
+
+          [ "$STATUS" = "Success" ]
+
+      - name: Notify Slack on failure
+        if: failure()
+        run: |
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d '{"text":":red_circle: Project Share App workflow failed (${{ inputs.version }})"}'
