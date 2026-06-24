@@ -39,12 +39,7 @@ jobs:
           if [ -z "$S3_PATH" ]; then echo "::error::SHARE_S3_PATH is empty"; exit 1; fi
           case "$S3_PATH" in --*) echo "::error::SHARE_S3_PATH starts with '--' (got: $S3_PATH)"; exit 1 ;; esac
 
-          PRESIGN_ARG=""
-          if [[ "${{ inputs.presign }}" == "true" ]]; then
-            PRESIGN_ARG=" --presign"
-          fi
-
-          CMD="mkdir -p ~/share-app && cd ~/share-app && bash $EC2_REPO_PATH/infrastructure/share-app/export.sh $VERSION $S3_BUCKET $S3_PATH${PRESIGN_ARG}"
+          CMD="mkdir -p ~/share-app && cd ~/share-app && bash $EC2_REPO_PATH/infrastructure/share-app/export.sh $VERSION $S3_BUCKET $S3_PATH"
 
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
@@ -76,25 +71,33 @@ jobs:
             --output json)
           echo "$INVOCATION"
 
-          if [ "$STATUS" = "Success" ]; then
-            URL=$(echo "$INVOCATION" | jq -r '.stdout' | sed -n 's/^PRESIGNED_URL=//p' | head -n1)
-            if [ -n "$URL" ]; then
-              {
-                echo "### Project Share App — ${{ inputs.version }}"
-                echo ""
-                echo "Presigned URL (valid 7 days):"
-                echo ""
-                echo "$URL"
-              } >> "$GITHUB_STEP_SUMMARY"
-
-              curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
-                -H "Content-Type: application/json" \
-                -d "$(jq -n --arg v "${{ inputs.version }}" --arg u "$URL" \
-                  '{text: (":package: Project Share App " + $v + " ready\n" + $u)}')"
-            fi
-          fi
-
           [ "$STATUS" = "Success" ]
+
+      - name: Presign URL
+        if: ${{ inputs.presign }}
+        env:
+          VERSION: ${{ inputs.version }}
+          S3_BUCKET: ${{ secrets.SHARE_S3_BUCKET }}
+          S3_PATH: ${{ secrets.SHARE_S3_PATH }}
+        run: |
+          # Presign on the runner with the deployer's long-lived IAM user keys,
+          # not on EC2 — SSM/instance-profile credentials expire in ~12h and
+          # would cap the URL's real lifetime well below the requested 7 days.
+          S3_KEY="$S3_PATH/$VERSION/project-$VERSION.tar.gz"
+          URL=$(aws s3 presign "s3://$S3_BUCKET/$S3_KEY" --expires-in 604800)
+
+          {
+            echo "### Project Share App — ${{ inputs.version }}"
+            echo ""
+            echo "Presigned URL (valid 7 days):"
+            echo ""
+            echo "$URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          curl -s -X POST "${{ secrets.SLACK_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n --arg v "${{ inputs.version }}" --arg u "$URL" \
+              '{text: (":package: Project Share App " + $v + " ready\n<" + $u + "|Shared app link>")}')"
 
       - name: Notify Slack on failure
         if: failure()
